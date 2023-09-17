@@ -108,10 +108,10 @@ void app_main() {
     co_handle_t handle;
     co_config_t config = {
         .thread_name = "corsacOTA",
-        .stack_size = 3192,
+        .stack_size = 4096,
         .thread_prio = 8,
         .listen_port = 3241,
-        .max_listen_num = 2,
+        .max_listen_num = 4,
         .wait_timeout_sec = 60,
         .wait_timeout_usec = 0,
     };
