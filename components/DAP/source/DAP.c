@@ -236,7 +236,8 @@ static uint32_t DAP_Connect(const uint8_t *request, uint8_t *response) {
 #if (DAP_SWD != 0)
     case DAP_PORT_SWD:
       DAP_Data.debug_port = DAP_PORT_SWD;
-      PORT_SWD_SETUP();
+      if (SWD_TransferSpeed != kTransfer_SPI)
+        PORT_SWD_SETUP();
       break;
 #endif
 #if (DAP_JTAG != 0)
@@ -272,6 +273,22 @@ static uint32_t DAP_Disconnect(uint8_t *response) {
 //   response: pointer to response data
 //   return:   number of bytes in response
 static uint32_t DAP_ResetTarget(uint8_t *response) {
+
+#if (USE_FORCE_SYSRESETREQ_AFTER_FLASH)
+  if (DAP_Data.debug_port == DAP_PORT_SWD) {
+    /* Workaround for software reset when nRESET is not connected */
+    uint8_t ack;
+    uint32_t AIRCR_REG_ADDR = 0xE000ED0C;
+    uint32_t AIRCR_RESET_VAL = 0x05FA << 16 | 1 << 2; /* Vector key | SYSRESETREQ bit */
+    uint8_t req = DAP_TRANSFER_APnDP | 0 | DAP_TRANSFER_A2 | 0;
+    ack = SWD_Transfer(req,&AIRCR_REG_ADDR);
+    if (ack == DAP_TRANSFER_OK) {
+      dap_os_delay(2);
+      req = DAP_TRANSFER_APnDP | 0 | DAP_TRANSFER_A2 | DAP_TRANSFER_A3;
+      SWD_Transfer(req,&AIRCR_RESET_VAL);
+    }
+  }
+#endif
 
   *(response+1) = RESET_TARGET();
   *(response+0) = DAP_OK;
