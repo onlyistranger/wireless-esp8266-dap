@@ -54,8 +54,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #if (USE_UART_BRIDGE == 1)
 
 #ifdef CONFIG_IDF_TARGET_ESP8266
-    #define UART_BRIDGE_TX UART_NUM_0
-    #define UART_BRIDGE_RX UART_NUM_1
+    #define UART_BRIDGE_TX UART_NUM_1
+    #define UART_BRIDGE_RX UART_NUM_0
 #elif defined CONFIG_IDF_TARGET_ESP32
     #define UART_BRIDGE_TX UART_NUM_2
     #define UART_BRIDGE_RX UART_NUM_2
@@ -302,11 +302,10 @@ void uart_bridge_task() {
                 } while (netbuf_next(netbuf) >= 0);
                 netbuf_delete(netbuf);
             } else {
-                if (events.nc->pending_err == ERR_CLSD) {
-                    continue; // The same hacky way to treat a closed connection
+                if (is_conn_valid) {
+                    close_tcp_netconn(events.nc);
+                    uart_bridge_reset();
                 }
-                close_tcp_netconn(events.nc);
-                uart_bridge_reset();
             }
         }
     }
